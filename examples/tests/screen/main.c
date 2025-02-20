@@ -5,16 +5,22 @@
 #include <libtock-sync/services/alarm.h>
 
 #define BUFFER_SIZE 10 * 1024
-uint8_t* buffer;
+uint8_t *buffer;
 
-int main(void) {
+int main(void)
+{
   int err;
 
   printf("available resolutions\n");
   uint32_t resolutions;
   err = libtock_screen_get_supported_resolutions(&resolutions);
-  if (err < 0) return -1;
-  for (uint32_t idx = 0; idx < resolutions; idx++) {
+
+  printf("err 1 screen get supported resolutions is: %d\n", err);
+
+  if (err < 0)
+    return -1;
+  for (uint32_t idx = 0; idx < resolutions; idx++)
+  {
     uint32_t width, height;
     libtock_screen_get_supported_resolution(idx, &width, &height);
     printf("  %ld x %ld\n", width, height);
@@ -23,8 +29,10 @@ int main(void) {
   printf("available colors depths\n");
   uint32_t pixel_format;
   err = libtock_screen_get_supported_pixel_formats(&pixel_format);
-  if (err < 0) return -1;
-  for (uint32_t idx = 0; idx < pixel_format; idx++) {
+  if (err < 0)
+    return -1;
+  for (uint32_t idx = 0; idx < pixel_format; idx++)
+  {
     libtock_screen_format_t format;
     libtock_screen_get_supported_pixel_format(idx, &format);
     int bits = libtock_screen_get_bits_per_pixel(format);
@@ -32,7 +40,8 @@ int main(void) {
   }
 
   err = libtock_screen_buffer_init(BUFFER_SIZE, &buffer);
-  if (err < 0) {
+  if (err < 0)
+  {
     printf("buffer allocation failed\n");
     return -1;
   }
@@ -44,12 +53,17 @@ int main(void) {
   libtocksync_screen_set_frame(0, 0, width, height);
   libtocksync_screen_fill(buffer, BUFFER_SIZE, 0);
   bool invert = false;
-  for (int i = 0; ; i++) {
-    if (i % 4 == 3) {
+  for (int i = 0;; i++)
+  {
+    if (i % 4 == 3)
+    {
       invert = !invert;
-      if (invert) {
+      if (invert)
+      {
         libtocksync_screen_invert_on();
-      } else {
+      }
+      else
+      {
         libtocksync_screen_invert_off();
       }
     }
