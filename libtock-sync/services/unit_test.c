@@ -24,7 +24,8 @@
  * The states which the test runner may be in before notifying the test
  * supervisor.
  */
-typedef enum {
+typedef enum
+{
   // Test runner has just started; awaiting supervisor signal to begin tests.
   TestInit,
 
@@ -41,7 +42,8 @@ typedef enum {
 /**
  * The potential outcomes of an individual test.
  */
-typedef enum {
+typedef enum
+{
   // Test completed with success.
   Passed,
 
@@ -58,7 +60,8 @@ typedef enum {
  * per process).
  */
 typedef struct unit_test_t unit_test_t;
-struct unit_test_t {
+struct unit_test_t
+{
   // Indicates the test runner status/request.
   unit_test_cmd_t cmd;
 
@@ -94,25 +97,30 @@ struct unit_test_t {
 
   // Interior linked list element, points to the next test runner in the
   // queue.
-  unit_test_t* next;
+  unit_test_t *next;
 };
 
 /**
  * Linked list header for basic interior linked list operations on the
  * unit_test_t struct. Only needed for optimizing the append operation.
  */
-typedef struct linked_list {
-  unit_test_t* head;
-  unit_test_t* tail;
+typedef struct linked_list
+{
+  unit_test_t *head;
+  unit_test_t *tail;
 } linked_list_t;
 
 /**
  * Append a new unit_test_t to the linked list.
  */
-static void list_append(linked_list_t* list, unit_test_t* test) {
-  if (list->tail) {
+static void list_append(linked_list_t *list, unit_test_t *test)
+{
+  if (list->tail)
+  {
     list->tail->next = test;
-  } else {
+  }
+  else
+  {
     list->head = test;
   }
 
@@ -123,21 +131,27 @@ static void list_append(linked_list_t* list, unit_test_t* test) {
 /**
  * Remove a unit_test_t from the front of the linked list.
  */
-static void list_pop(linked_list_t* list) {
-  if (!list->head) return;
+static void list_pop(linked_list_t *list)
+{
+  if (!list->head)
+    return;
 
   list->head = list->head->next;
 
-  if (!list->head) list->tail = NULL;
+  if (!list->head)
+    list->tail = NULL;
 }
 
 /**
  * Returns true if the linked list contains the given unit_test_t.
  */
-static bool list_contains(linked_list_t* list, unit_test_t* test) {
-  unit_test_t* curr = list->head;
-  while (curr) {
-    if (curr == test) return true;
+static bool list_contains(linked_list_t *list, unit_test_t *test)
+{
+  unit_test_t *curr = list->head;
+  while (curr)
+  {
+    if (curr == test)
+      return true;
     curr = curr->next;
   }
   return false;
@@ -166,43 +180,44 @@ static bool done = false;
  */
 static linked_list_t pending_pids;
 
-
 /*******************************************************************************
  * TEST RUNNER FUNCTIONS
  ******************************************************************************/
 
 /** \brief A test setup function */
-__attribute__((weak))
-bool test_setup(void) {
+__attribute__((weak)) bool test_setup(void)
+{
   return true;
 }
 
 /** \brief A test teardown function */
-__attribute__((weak))
-void test_teardown(void) {}
+__attribute__((weak)) void test_teardown(void) {}
 
 /** \brief Set the `done` condition variable when notified by the supervisor.
  *
  * IPC callback which sets the `done` condition variable, allowing the test
  * runner to pause execution and await supervisor approval to continue running.
  */
-static void continue_callback(__attribute__ ((unused)) int   pid,
-                              __attribute__ ((unused)) int   arg2,
-                              __attribute__ ((unused)) int   arg3,
-                              __attribute__ ((unused)) void* ud) {
+static void continue_callback(__attribute__((unused)) int pid,
+                              __attribute__((unused)) int arg2,
+                              __attribute__((unused)) int arg3,
+                              __attribute__((unused)) void *ud)
+{
   done = true;
 }
 
 /** \brief Notify the test supervisor, and await approval to continue the test.
  */
-static void sync_with_supervisor(int svc) {
+static void sync_with_supervisor(int svc)
+{
   done = false;
   ipc_notify_service(svc);
   yield_for(&done);
 }
 
-static char failure_reason[sizeof(((unit_test_t*) 0)->reason)];
-void set_failure_reason(const char* reason) {
+static char failure_reason[sizeof(((unit_test_t *)0)->reason)];
+void set_failure_reason(const char *reason)
+{
   strncpy(failure_reason, reason, sizeof(failure_reason));
 }
 
@@ -220,13 +235,14 @@ void set_failure_reason(const char* reason) {
  * \param svc_name The IPC service name of the test supervisor (e.g.
  *                 "org.tockos.unit_test")
  */
-void unit_test_runner(unit_test_fun* tests, uint32_t test_count,
-                      uint32_t timeout_ms, const char* svc_name) {
+void unit_test_runner(unit_test_fun *tests, uint32_t test_count,
+                      uint32_t timeout_ms, const char *svc_name)
+{
 
   // Initialize the test state.
   memset(&test_buf[0], 0, TEST_BUF_SZ);
-  unit_test_t* test = (unit_test_t*)(&test_buf[0]);
-  test->count      = test_count;
+  unit_test_t *test = (unit_test_t *)(&test_buf[0]);
+  test->count = test_count;
   test->timeout_ms = timeout_ms;
 
   // Establish communication with the test supervisor service. First delay 10 ms
@@ -234,7 +250,8 @@ void unit_test_runner(unit_test_fun* tests, uint32_t test_count,
   libtocksync_alarm_delay_ms(10);
   size_t test_svc;
   int err = ipc_discover(svc_name, &test_svc);
-  if (err < 0) return;
+  if (err < 0)
+    return;
 
   // Register the callback for cooperative scheduling.
   ipc_register_client_callback(test_svc, continue_callback, NULL);
@@ -247,7 +264,8 @@ void unit_test_runner(unit_test_fun* tests, uint32_t test_count,
   sync_with_supervisor(test_svc);
 
   uint32_t i = 0;
-  for (i = 0; i < test_count; i++) {
+  for (i = 0; i < test_count; i++)
+  {
     memcpy(test->name, tests[i].name, sizeof(test->name));
 
     // Await approval to start the current test.
@@ -262,7 +280,8 @@ void unit_test_runner(unit_test_fun* tests, uint32_t test_count,
 
     // Record the result. If the test timed out, the supervisor will have
     // marked the result already.
-    if (test->result != Timeout) {
+    if (test->result != Timeout)
+    {
       test->result = passed ? Passed : Failed;
     }
     strncpy(test->reason, failure_reason, sizeof(test->reason));
@@ -286,32 +305,34 @@ void unit_test_runner(unit_test_fun* tests, uint32_t test_count,
 
 /** \brief Print the individual test result to the console.
  */
-static void print_test_result(unit_test_t* test) {
-  char name_buf[sizeof(test->name) + 1]     = {0};
+static void print_test_result(unit_test_t *test)
+{
+  char name_buf[sizeof(test->name) + 1] = {0};
   char reason_buf[sizeof(test->reason) + 1] = {0};
   memcpy(name_buf, test->name, sizeof(test->name));
   memcpy(reason_buf, test->reason, sizeof(test->reason));
   printf("%d.%03lu: %-24s ", test->pid, test->current, name_buf);
-  switch (test->result) {
-    case Passed:
-      puts("[✓]");
-      break;
-    case Failed:
-      printf("[FAILED] %s\n", reason_buf);
-      break;
-    case Timeout:
-      puts("[ERROR: Timeout]");
-      break;
-    default:
-      break;
+  switch (test->result)
+  {
+  case Passed:
+    puts("[✓]");
+    break;
+  case Failed:
+    printf("[FAILED] %s\n", reason_buf);
+    break;
+  case Timeout:
+    puts("[ERROR: Timeout]");
+    break;
+  default:
+    break;
   }
 }
 
 /** \brief Print an aggregate summary of the unit test results to the console.
  */
-static void print_test_summary(unit_test_t* test) {
-  uint32_t total = (test->count > test->pass_count + test->fail_count) ?
-                   test->count : test->pass_count + test->fail_count;
+static void print_test_summary(unit_test_t *test)
+{
+  uint32_t total = (test->count > test->pass_count + test->fail_count) ? test->count : test->pass_count + test->fail_count;
 
   uint32_t incomplete = total - (test->pass_count + test->fail_count);
 
@@ -321,20 +342,22 @@ static void print_test_summary(unit_test_t* test) {
          incomplete, total);
 }
 
-struct alarm_cb_data {
-  unit_test_t* test;
+struct alarm_cb_data
+{
+  unit_test_t *test;
 };
 
-static struct alarm_cb_data data = { .test = NULL };
+static struct alarm_cb_data data = {.test = NULL};
 
 /** \brief Timer callback for handling a test timeout.
  *
  * When a test times out, there's no guarantee about the test runner's state, so
  * we just stop the tests here and print the results.
  */
-static void timeout_callback(__attribute__ ((unused)) uint32_t now,
-                             __attribute__ ((unused)) uint32_t scheduled,
-                             __attribute__ ((unused)) void*    opqaue) {
+static void timeout_callback(__attribute__((unused)) uint32_t now,
+                             __attribute__((unused)) uint32_t scheduled,
+                             __attribute__((unused)) void *opqaue)
+{
   data.test->result = Timeout;
   print_test_result(data.test);
   print_test_summary(data.test);
@@ -349,77 +372,89 @@ static void timeout_callback(__attribute__ ((unused)) uint32_t now,
  * supervisor (service) side. See unit_test_runner for details about the test runner
  * (client) side.
  */
-static void unit_test_service_callback(int                            pid,
-                                       __attribute__ ((unused)) int   len,
-                                       int                            buf,
-                                       __attribute__ ((unused)) void* ud) {
-  if (buf == 0) {
+static void unit_test_service_callback(int pid,
+                                       __attribute__((unused)) int len,
+                                       int buf,
+                                       __attribute__((unused)) void *ud)
+{
+  if (buf == 0)
+  {
     return;
   }
 
-  unit_test_t* test      = (unit_test_t*)buf;
-  linked_list_t* pending = (linked_list_t*)ud;
+  unit_test_t *test = (unit_test_t *)buf;
+  linked_list_t *pending = (linked_list_t *)ud;
 
-  switch (test->cmd) {
-    case TestInit:
-      // Initialize the relevant fields in the test descriptor.
-      test->pid = pid;
+  switch (test->cmd)
+  {
+  case TestInit:
+    // Initialize the relevant fields in the test descriptor.
+    test->pid = pid;
 
-      // Queue the test
-      if (!list_contains(pending, test)) {
-        list_append(pending, test);
+    // Queue the test
+    if (!list_contains(pending, test))
+    {
+      list_append(pending, test);
+    }
+
+    // If there is no other test in progress, start this test.
+    if (pending->head->pid == pid)
+    {
+      ipc_notify_client(pid);
+    }
+    break;
+
+  case TestStart:
+    // Start the alarm and start the test.
+    data.test = test;
+    libtock_alarm_in_ms(test->timeout_ms, timeout_callback, NULL, &test->alarm);
+    ipc_notify_client(test->pid);
+    break;
+
+  case TestEnd:
+    // Cancel the timeout alarm since the test is now complete.
+    // Record the test result for the test summary statistics.
+    // libtock_alarm_ms_cancel(&test->alarm);
+    libtock_alarm_cancel(&test->alarm);
+
+    // If the test timed out, the summary results will already have been
+    // printed. In this case, we no longer want the tests to continue,
+    // as there is no guarantee about the test runner's state.
+    if (test->result != Timeout)
+    {
+      if (test->result == Passed)
+      {
+        test->pass_count++;
       }
-
-      // If there is no other test in progress, start this test.
-      if (pending->head->pid == pid) {
-        ipc_notify_client(pid);
+      else
+      {
+        test->fail_count++;
       }
-      break;
-
-    case TestStart:
-      // Start the alarm and start the test.
-      data.test = test;
-      libtock_alarm_in_ms(test->timeout_ms, timeout_callback, NULL, &test->alarm);
+      print_test_result(test);
       ipc_notify_client(test->pid);
-      break;
+    }
+    break;
 
-    case TestEnd:
-      // Cancel the timeout alarm since the test is now complete.
-      // Record the test result for the test summary statistics.
-      libtock_alarm_ms_cancel(&test->alarm);
+  case TestCleanup:
+    // If the test timed out, we want to stop the further execution of tests.
+    if (test->result != Timeout)
+    {
+      print_test_summary(test);
+    }
 
-      // If the test timed out, the summary results will already have been
-      // printed. In this case, we no longer want the tests to continue,
-      // as there is no guarantee about the test runner's state.
-      if (test->result != Timeout) {
-        if (test->result == Passed) {
-          test->pass_count++;
-        } else {
-          test->fail_count++;
-        }
-        print_test_result(test);
-        ipc_notify_client(test->pid);
-      }
-      break;
+    // Remove the completed test runner from the queue and allow it to
+    // exit.
+    list_pop(pending);
+    ipc_notify_client(test->pid);
 
-    case TestCleanup:
-      // If the test timed out, we want to stop the further execution of tests.
-      if (test->result != Timeout) {
-        print_test_summary(test);
-      }
-
-      // Remove the completed test runner from the queue and allow it to
-      // exit.
-      list_pop(pending);
-      ipc_notify_client(test->pid);
-
-      // Continue with the next enqueued test runner, if there is one.
-      if (pending->head) {
-        ipc_notify_client(pending->head->pid);
-      }
-      break;
-    default:
-      break;
+    // Continue with the next enqueued test runner, if there is one.
+    if (pending->head)
+    {
+      ipc_notify_client(pending->head->pid);
+    }
+    break;
+  default:
+    break;
   }
 }
 
@@ -427,7 +462,8 @@ static void unit_test_service_callback(int                            pid,
  *
  * Sets up the IPC service and returns.
  */
-void unit_test_service(void) {
+void unit_test_service(void)
+{
   pending_pids.head = NULL;
   pending_pids.tail = NULL;
   ipc_register_service_callback("org.tockos.unit_test",

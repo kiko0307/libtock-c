@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <libtock-sync/display/screen.h>
 #include <libtock-sync/services/alarm.h>
@@ -8,7 +9,8 @@
 
 uint8_t screen_buffer[BUFFER_SIZE];
 
-int main(void) {
+int main(void)
+{
   printf("[SCREEN-TOCK] Test Screen Display\n");
 
   uint32_t width, height;
@@ -24,6 +26,8 @@ int main(void) {
   size_t x_offset = 0;
 
   // T
+  printf("Printing T\n");
+  memcpy(screen_buffer, "T", 50); // 长度不能用buffer size，会卡死，不知道为什么
 
   x = x_offset + 1;
   y = 0;
@@ -32,6 +36,13 @@ int main(void) {
   libtocksync_screen_set_frame(x, y, w, h);
   libtocksync_screen_fill(screen_buffer, BUFFER_SIZE, 0xFFFF);
 
+  printf("T in first fill:\n");
+  for (int i = 0; i < BUFFER_SIZE; i++)
+  {
+    printf("0x%02X ", screen_buffer[i]);
+  }
+  printf("\n");
+
   x = x_offset + char_width / 3;
   y = 0;
   w = char_width / 3;
@@ -39,7 +50,15 @@ int main(void) {
   libtocksync_screen_set_frame(x, y, w, h);
   libtocksync_screen_fill(screen_buffer, BUFFER_SIZE, 0xFFFF);
 
+  printf("T in second fill:\n");
+  for (int i = 0; i < BUFFER_SIZE; i++)
+  {
+    printf("0x%02X ", screen_buffer[i]);
+  }
+  printf("\n");
+
   // O
+  printf("Printing O\n");
   x_offset = char_width;
 
   x = x_offset + 1;
@@ -57,6 +76,7 @@ int main(void) {
   libtocksync_screen_fill(screen_buffer, BUFFER_SIZE, 0);
 
   // C
+  printf("Printing C\n");
   x_offset = char_width * 2;
 
   x = x_offset + 1;
@@ -74,6 +94,7 @@ int main(void) {
   libtocksync_screen_fill(screen_buffer, BUFFER_SIZE, 0);
 
   // K
+  printf("Printing K\n");
   x_offset = char_width * 3;
 
   x = x_offset + 1;
