@@ -6,6 +6,8 @@ TOCK_USERLAND_BASE_DIR = ../../..
 # Which files to compile.
 C_SRCS := $(wildcard *.c)
 
+EXTERN_LIBS += $(TOCK_USERLAND_BASE_DIR)/u8g2
+
 # Include userland master makefile. Contains rules and flags for actually
 # building the application.
 include $(TOCK_USERLAND_BASE_DIR)/AppMakefile.mk
